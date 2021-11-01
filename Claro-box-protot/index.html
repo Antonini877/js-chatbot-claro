@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <! --- importando o react e suas dependências --->
+        <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+        <script crossorigin src="https://unpkg.com/react@17/umd/react.development.js"></script>
+        <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    </head>
+    <body>
+        <div id="comp"></div>
+        <div id="oi"></div>
+        <div style="margin-left:30em;overflow: scroll;height:10em;width:15em" id="chat"></div>
+       
+    </body>
+    <script type="text/babel">
+    class Falas{
+        constructor(){
+            this.meuGrafo = new Grafo();
+            //os termos entre barras são os gatilhos para que o bot possa responder o 0 e o 1 representa também o nó do grafo
+            this.minhas_falas = {
+                0: [/oi/i, /olá/i, /ola/i, /bom dia/i, /boa tarde/i, /boa noite/i],
+                1: [/problema/i, /atendimento/i, /ajuda/i, /atendido/i]
+            };
+            //essas são as respostas possíveis 
+            this.respostas = {
+                0: ["olá, como posso ajudar?"],
+                1:["como posso ajudar no seu atendimento?"]
+            };
+        }
+        //esse método vai receber o input do usuário e caso algum gatilho seja ativado, ele retornará uma resposta 
+        //também vai receber um vetor com os nós adjacentes no grafo
+        GetFala(input){
+            for(var c=0; c<2; c++){
+                //ele vai testar apenas os nós que são adjacentes
+                if(this.meuGrafo.GetNosAdj().has(c)){
+                    for(var g=0; g<this.minhas_falas[c].length; g++){
+                        if((this.minhas_falas[c])[g].test(input)){
+                            if(this.meuGrafo.noAtual!=c){
+                                this.meuGrafo.saltar(c);
+                            }
+                            return this.respostas[c]
+                        }
+                    }
+                }
+            }
+        }
+
+        
+    }
+    class Grafo{
+        constructor(){
+            this.noAtual = 0;
+            this.grafo = {
+                0: [1],
+                1: []
+            };
+        }
+        //método que faz um salto entre os nós caso o nó solicitado seja adjacente
+        saltar(no){
+            if(this.grafo[this.noAtual].includes(no)){
+                this.noAtual = no;
+            }
+        }
+        //método que retorna um vetor com os nós adjacentes
+        GetNosAdj(){
+            let adj = new Set(this.grafo[this.noAtual]);
+            adj.add(this.noAtual);
+            return adj;
+        }
+
+
+    }
+    class Pesquisa extends React.Component{
+        constructor(props){
+            super();
+            this.state = {
+                input : "",
+                auto_complete_values : []
+            }
+            
+
+        }
+        escreve = (event) =>{
+                this.setState({input:event.target.value});
+            }
+
+        render(){
+            return(
+                <div>
+                <div>
+                    <form>
+                        <input type="text" onChange={this.escreve} value={this.state.input}/>
+                    </form>
+                </div>
+                <span>{this.state.auto_complete_values.map((val) => <p>{val}</p>)}</span>
+                </div>
+            )
+        }
+    }
+    ReactDOM.render(<Pesquisa/>, comp);
+    //testes
+    var f = new Falas();
+    var ll = f.GetFala("oi")
+    console.log(ll);
+    console.log(f.meuGrafo.noAtual);
+    
+    console.log(f.GetFala("oi"));
+   
+    console.log(f.GetFala("atendido"));
+    
+    console.log(f.GetFala("oi"));
+
+    console.log(f.meuGrafo.grafo);
+
+    
+    </script>
+</html>
