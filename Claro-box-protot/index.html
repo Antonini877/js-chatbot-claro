@@ -3,13 +3,14 @@
     <head>
         <! --- importando o react e suas dependências --->
         <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+        <link rel="stylesheet" href="style.css">
         <script crossorigin src="https://unpkg.com/react@17/umd/react.development.js"></script>
         <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
     </head>
     <body>
         <div id="comp"></div>
         <div id="oi"></div>
-        <div style="margin-left:30em;overflow: scroll;height:10em;width:15em" id="chat"></div>
+       
        
     </body>
     <script type="text/babel">
@@ -18,19 +19,31 @@
             this.meuGrafo = new Grafo();
             //os termos entre barras são os gatilhos para que o bot possa responder o 0 e o 1 representa também o nó do grafo
             this.minhas_falas = {
-                0: [/oi/i, /olá/i, /ola/i, /bom dia/i, /boa tarde/i, /boa noite/i],
-                1: [/problema/i, /atendimento/i, /ajuda/i, /atendido/i]
+                0: [/oi/i, /olá/i, /bom dia/i, /boa tarde/i, /boa noite/i],
+                1: [/atendimento/i,  /atendido/i],
+                2: [/indicação/i, /indicar/i, /recomendar/i, /recomende/i, /indique/i],
+                3: [/detalhes/i, /história/i],
+                4: [/não/i],
+                5: [ /now/i],
+                6:[/sim/i, /agora foi/i],
+                7:[/não/i]
             };
             //essas são as respostas possíveis 
             this.respostas = {
-                0: ["olá, como posso ajudar?"],
-                1:["como posso ajudar no seu atendimento?"]
+                0: ["Olá, Como posso ajudar?", "Olá! Como vai?"],
+                1:["Como posso ajudar no seu atendimento?", "Qual é a sua dúvida de atendimento?"],
+                2:["Você iria gostar do filme star wars"],
+                3:["Se importa com spoilers?"],
+                4:["Darth vader é pai do Luke"],
+                5:["Tente tirar o seu Claro Box da tomada por 10 segundos e ligá-lo outra vez, caso não funcione fale"],
+                6:["Fico feliz em ter ajudado!"],
+                7: ["Ligue para a central de atendimentos: 4004-7777"]
             };
         }
         //esse método vai receber o input do usuário e caso algum gatilho seja ativado, ele retornará uma resposta 
         //também vai receber um vetor com os nós adjacentes no grafo
         GetFala(input){
-            for(var c=0; c<2; c++){
+            for(var c=0; c<Object.keys(this.minhas_falas).length; c++){
                 //ele vai testar apenas os nós que são adjacentes
                 if(this.meuGrafo.GetNosAdj().has(c)){
                     for(var g=0; g<this.minhas_falas[c].length; g++){
@@ -38,11 +51,14 @@
                             if(this.meuGrafo.noAtual!=c){
                                 this.meuGrafo.saltar(c);
                             }
-                            return this.respostas[c]
+                            
+                            return this.respostas[c][Math.floor(Math.random()*this.respostas[c].length)]
                         }
+                       
                     }
                 }
             }
+            return "Não sei se entendi..."
         }
 
         
@@ -51,8 +67,14 @@
         constructor(){
             this.noAtual = 0;
             this.grafo = {
-                0: [1],
-                1: []
+                0: [1, 2, 5],
+                1: [5],
+                2: [3],
+                3: [4],
+                4: [2],
+                5: [6, 7],
+                6: [0],
+                7:[0]
             };
         }
         //método que faz um salto entre os nós caso o nó solicitado seja adjacente
@@ -70,12 +92,26 @@
 
 
     }
+    class MatchInputResponse {
+        constructor(){
+            this.fal = new Falas()
+            }
+
+        In(inp){
+            return this.fal.GetFala(inp);
+        }
+
+
+    }
     class Pesquisa extends React.Component{
         constructor(props){
             super();
             this.state = {
-                input : "",
-                auto_complete_values : []
+                input: "",
+                in : "",
+                auto_complete_values : [],
+                out : "Clique no microfone para falar."
+                
             }
             
 
@@ -83,34 +119,58 @@
         escreve = (event) =>{
                 this.setState({input:event.target.value});
             }
+        fala = (f) =>{
+            var m = new SpeechSynthesisUtterance(f);
+            speechSynthesis.speak(m);
+        }
+
+        InputAudio = (event) => {
+            var SpeechRecognition = SpeechRecognition||webkitSpeechRecognition;
+            var sr = new SpeechRecognition();
+            sr.lang = "pt-BR";
+            sr.start();
+            var res = "";
+            sr.onresult = (event)=>{
+                var fala_in = event.results[0][0].transcript;
+                res = conversa.In(fala_in);
+                this.setState({in:fala_in});
+                this.setState({out:res});
+                this.fala(res);
+            }
+            
+            
+        }
 
         render(){
             return(
                 <div>
-                <div>
-                    <form>
-                        <input type="text" onChange={this.escreve} value={this.state.input}/>
-                    </form>
+                    <div className="cabeca">
+                        <img src="claroVETOR_vitoria.png" className="im"></img>
+                        <h1 className="tit">CHATBOX</h1>
+                        </div>
+                <div className="chat">
+                    
+                    <div className="msg">
+                    <p>{this.state.in}</p>
+                    
                 </div>
-                <span>{this.state.auto_complete_values.map((val) => <p>{val}</p>)}</span>
+                    <div className="msg2">
+                    <p>{this.state.out}</p>
+                </div>
+                   
+                   
+                </div>
+                <button onClick={this.InputAudio} className="bot"> <img src="micro1.png" className="im"></img></button>
+               
+                
                 </div>
             )
         }
     }
+    var conversa = new MatchInputResponse();
     ReactDOM.render(<Pesquisa/>, comp);
-    //testes
-    var f = new Falas();
-    var ll = f.GetFala("oi")
-    console.log(ll);
-    console.log(f.meuGrafo.noAtual);
-    
-    console.log(f.GetFala("oi"));
-   
-    console.log(f.GetFala("atendido"));
-    
-    console.log(f.GetFala("oi"));
 
-    console.log(f.meuGrafo.grafo);
+  
 
     
     </script>
